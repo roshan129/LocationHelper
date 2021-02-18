@@ -14,6 +14,7 @@ public class MainActivity extends AppCompatActivity {
     LocationHelper locationHelper;
     private static final String TAG = "MainActivity";
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,6 +33,11 @@ public class MainActivity extends AppCompatActivity {
         }*/
 
         Log.d(TAG, "onCreate: " + LocationHelper.getCustomFormattedString("abc"));
+
+
+        locationHelper.getLastLocationAtTimeInterval(1000, location ->
+                Log.d(TAG, "getLastLocation: time: "+ location.getLongitude()));
+
 
     }
 }
