@@ -13,11 +13,16 @@ import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 
+import com.adivid.locationhelperlibrary.utils.Constants;
 import com.adivid.locationhelperlibrary.utils.LocationManager;
 import com.adivid.locationhelperlibrary.utils.Utils;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationServices;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class LocationHelper {
 
@@ -26,6 +31,8 @@ public class LocationHelper {
     private FusedLocationProviderClient fusedLocationProviderClient;
     private Handler handler;
     private Runnable runnable;
+    public static boolean isTrackingOn = false;
+    private ScheduledExecutorService scheduledExecutorService;
 
     public LocationHelper(Activity activity) {
         context = activity.getApplicationContext();
@@ -71,21 +78,51 @@ public class LocationHelper {
     @SuppressLint("MissingPermission")
     public void getLastLocationAtTimeInterval(int timeInMillis, LocationManager locationManager) {
         try{
-            handler = new Handler(Looper.getMainLooper());
-            runnable = new Runnable() {
-                @Override
-                public void run() {
-                    handler.postDelayed(() -> {
+            if (!isTrackingOn) {
+                isTrackingOn = true;
+
+                handler = new Handler(Looper.getMainLooper());
+                runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        isTrackingOn = true;
+                        handler.postDelayed(() -> {
+                            fusedLocationProviderClient.getLastLocation().addOnSuccessListener(location -> {
+                                locationManager.getLastLocation(location);
+                                handler.postDelayed(this, timeInMillis);
+                            }).addOnFailureListener(command -> {
+                                locationManager.getLastLocation(null);
+                            });
+                        }, timeInMillis);
+                    }
+                };
+                handler.postDelayed(runnable, 1000);
+            }
+        }catch (Exception e){
+            locationManager.getLastLocation(null);
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    public void getLastLocationAtTimeIntervalScheduler(int timeInMillis, LocationManager locationManager) {
+        try{
+            if (!isTrackingOn){
+                isTrackingOn = true;
+                scheduledExecutorService = Executors.newScheduledThreadPool(5);
+
+                scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+                    @Override
+                    public void run() {
                         fusedLocationProviderClient.getLastLocation().addOnSuccessListener(location -> {
                             locationManager.getLastLocation(location);
-                            handler.postDelayed(this, timeInMillis);
                         }).addOnFailureListener(command -> {
                             locationManager.getLastLocation(null);
                         });
-                    }, timeInMillis);
-                }
-            };
-            handler.postDelayed(runnable, 1000);
+                    }
+                }, 0, timeInMillis, TimeUnit.MILLISECONDS);
+
+            }
+
         }catch (Exception e){
             locationManager.getLastLocation(null);
         }
@@ -93,6 +130,7 @@ public class LocationHelper {
 
     public void stopLocationTimeInterval() {
         handler.removeCallbacks(runnable);
+        isTrackingOn = false;
     }
 
 }

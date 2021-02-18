@@ -34,10 +34,15 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "onCreate: " + LocationHelper.getCustomFormattedString("abc"));
 
+        findViewById(R.id.buttonLocation).setOnClickListener(v -> {
+            locationHelper.getLastLocationAtTimeInterval(1000, location ->
+                    Log.d(TAG, "getLastLocation: time1: "+ location.getLongitude()));
 
-        locationHelper.getLastLocationAtTimeInterval(1000, location ->
-                Log.d(TAG, "getLastLocation: time: "+ location.getLongitude()));
+        });
 
+        findViewById(R.id.buttonLocationStop).setOnClickListener(v -> {
+            locationHelper.stopLocationTimeInterval();
+        });
 
     }
 }
